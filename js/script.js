@@ -1,58 +1,44 @@
 /*
 Treehouse Techdegree:
 FSJS Project 2 - Data Pagination and Filtering
+Author: Stephan von Coelln
 */
 
-const itemsPP = 9 ; 
+const itemsPP = 9 ; // this is to parametrize the number of students displayed per page
 
-/*
-For assistance:
-   Check out the "Project Resources" section of the Instructions tab: https://teamtreehouse.com/projects/data-pagination-and-filtering#instructions
-   Reach out in your Slack community: https://treehouse-fsjs-102.slack.com/app_redirect?channel=unit-2
-*/
-/*
-data sample:
-const data = [
-   {
-     name: {
-       title: "Miss",
-       first: "Ethel",
-       last: "Dean",
-     },
-     email: "ethel.dean@example.com",
-     registered: {
-       date: "12-15-2005",
-       age: 15,
-     },
-     picture: {
-       large: "https://randomuser.me/api/portraits/women/25.jpg",
-       medium: "https://randomuser.me/api/portraits/med/women/25.jpg",
-       thumbnail: "https://randomuser.me/api/portraits/thumb/women/25.jpg",
-     },
-   }, 
+/**
+ * creates the search bar   
+ */ 
+function createSearchBar() {
+   labelEl = document.createElement('label') ;
+   labelEl.setAttribute('for','search') ;
+   labelEl.className = 'student-search' ;
 
+   inputEl = document.createElement('input') ;
+   inputEl.setAttribute('id','search') ;
+   inputEl.setAttribute('placeholder', 'Search by name...') ;
    
+   buttonEl = document.createElement('button') ;
+   buttonEl.setAttribute('type','button') ;
 
-# list items under student-list
-   <ul class="student-list">
+   imgEl = document.createElement('img') ;
+   imgEl.src = "img/icn-search.svg" ;
+   imgEl.setAttribute('alt','Search icon') ;
 
-   <!-- Dynamically insert students here
-     
-     EXAMPLE - Student list item:
+   buttonEl.appendChild(imgEl) ;
+   labelEl.appendChild(inputEl) ;
+   labelEl.appendChild(buttonEl) ;
 
-     <li class="student-item cf">
-       <div class="student-details">
-         <img class="avatar" src="https://randomuser.me/api/portraits/women/25.jpg" alt="Profile Picture">
-         <h3>Ethel Dean</h3>
-         <span class="email">ethel.dean@example.com</span>
-       </div>
-       <div class="joined-details">
-         <span class="date">Joined 12-15-2005</span>
-       </div>
-     </li>
-*/
+   const header = document.querySelector('header.header') ;
+   headerH2 = header.children[0] ;
+   headerH2.appendChild(labelEl) ;
+}
 
-function createListItem(i) {
+
+/**
+ * creates and displayes all the students as list items 
+ */
+function createListItem(data, i) {
    const ulBase = document.querySelector('ul.student-list') ;
 
    const liAdd = document.createElement('li') ;
@@ -93,57 +79,63 @@ function createListItem(i) {
    return ulBase ;
 }
 
+
+/**
+ * returns the index of the active page 
+ */
 function getActivePage() {
    const ul = document.querySelector('ul.link-list') ;
    liCollection = ul.children ;
    if(liCollection.length == 0) {
       return 1 ;
-
    }
-   for (i=0 ; i < liCollection.length  ; i++) {
-      but = liCollection[i].children[0] ;
+   for (i=1 ; i <= liCollection.length  ; i++) {
+      but = liCollection[i-1].children[0] ;
       if (but.className === 'active') {
-            return i+1 ;
+            return i ;
          }  
     }
    return 1 ;  
   }
 
 
-/*
-Create the `showPage` function
-This function will create and insert/append the elements needed to display a "page" of nine students
+/** 
+* The `showPage` function
+* This function will create the elements needed to display a "page" of itemsPerPage students
 */
-function showPage(data,  itemsPerPage=itemsPP) {
-   page = getActivePage() ;
+function showPage(data,  itemsPerPage=itemsPP, init=false) {
+   if (!init) {
+      page = getActivePage() ;
+   } else {
+      page = 1 ;
+   }   
    let startInd = (page * itemsPerPage) - itemsPerPage ;
-   let endInd = (page * itemsPerPage) ;
+   let endInd = Math.min(page * itemsPerPage, data.length) ;
    const ulBase = document.querySelector('ul.student-list') ;
    ulBase.innerHTML = '' ;
    for (i=startInd; i<endInd; i++) { 
-      createListItem(i) ;
+      createListItem(data, i) ;
    }
 }
 
-/*
-Create the `addPagination` function
-This function will create and insert/append the elements needed for the pagination buttons
+
+/** 
+ * calculates the number of required pages given date and items per page 
 */
 function calcNumPages(data, itemsPerPage=itemsPP) {
    numEl = data.length ;
-   numPages = Math.floor(numEl/itemsPP) ;
+   numPages = Math.ceil(numEl/itemsPP) ;
    return numPages ;
 }
 
 
-//Display Pagination buttons 
+/**
+ * function to create the pagination-buttons
+ * @param {i} i is the button-number  
+ */
 function createButtonLi(i) {
    div2 = document.createElement('div') ;
    div2.className = 'pagination' ;
-
-   //ul2 = document.createElement('ul') ;
-   //ul2.className = 'link-list' ;
-
    li = document.createElement('li') ;
    but = document.createElement('button') ;
    but.className = 'inactive' ; // initialization with default 
@@ -153,6 +145,10 @@ function createButtonLi(i) {
 }
 
 
+/**
+ * function to switch the active pagination-button
+ * @param {e} e is the event object 
+ */
 function switchButtonStates(e) {
    ulLinkList =  e.target.parentNode.parentNode ;
    // set all active states to inactive
@@ -167,25 +163,52 @@ function switchButtonStates(e) {
 }
 
 
-function addPagination(data, itemsPerPage=itemsPP) {
-   numPages = calcNumPages(data, itemsPP) ;
+/** 
+* Create the buttons for pagination
+*/
+function addButtons(data, itemsPP, init=false) {
    const ul = document.querySelector('ul.link-list') ;
-
-   for (i=0 ; i < numPages ; i++) {
+   numPages = calcNumPages(data, itemsPP) ;
+   ul.innerHTML = ''
+  
+   for (i=1 ; i <= numPages ; i++) { // creates all the list items containing student-info 
       buttonLi = createButtonLi(i) ;
+      if (init && i==1) {buttonLi.children[0].className = 'active'} ;
       ul.appendChild(buttonLi) ;
    }
-
-   ul.addEventListener('click', (e) => { 
-      if(e.target.tagName === 'BUTTON') {
-         switchButtonStates(e) ;    
-         showPage(data, itemsPerPage=itemsPP) ;
-      }  
-    }) ;
 }
 
 
-// Call functions
-showPage(data, itemsPerPage=itemsPP) ;
-addPagination(data, itemsPP) ;
+/** 
+* Create the `addPagination` function
+* This function will create and insert/append the elements needed for the pagination, but will also render the whole page 
+*/
+function addPagination(data, itemsPerPage=itemsPP) {
+   const ul = document.querySelector('ul.link-list') ;
+   showPage(data, itemsPerPage=itemsPerPage, init=true) ; // for initially showing page 1
+   addButtons(data, itemsPerPage, init=true) ;
+   createSearchBar() ;  // creating the search bar 
+   var filtered = data ;
+
+   // event handler for filtering
+    const header = document.querySelector('header.header') ;
+    searchInput = header.children[0].children[0].children[0] ;
+    searchInput.addEventListener('keyup', (e) => { 
+    filtered = data.filter(data => data.name.first.toLowerCase().startsWith(e.target.value.toLowerCase())) ;
+      showPage(filtered, itemsPerPage, init=true) ;    
+      addButtons(filtered, itemsPerPage,init=false) ;
+    }) ;
+
+   // event handler for pagination
+   ul.addEventListener('click', (e) => { 
+      if(e.target.tagName === 'BUTTON') {
+         switchButtonStates(e) ;    
+         showPage(filtered, itemsPerPage=itemsPerPage, init=false) ;
+      } ;
+   }) ;
+}
+
+
+// Call functions 
+addPagination(data, itemsPP) ; 
 
